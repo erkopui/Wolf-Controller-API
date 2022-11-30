@@ -1,0 +1,17 @@
+[package]
+name = "wolf-app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+
+[dependencies]
+axum-extra = {version = "0.4", features = ["spa"]}
+axum = {version = "0.6"}
+tokio = {version = "1.22", default-features = false, features = ["rt-multi-thread", "macros"]}
