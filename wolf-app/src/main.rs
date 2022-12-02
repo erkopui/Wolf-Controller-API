@@ -4,11 +4,11 @@ use axum::{
     Router,
 };
 use axum_extra::routing::SpaRouter;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 
-pub mod data;
-use data::App;
+pub mod app;
+use app::App;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -22,8 +22,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = Arc::new(Mutex::new(data));
 
     let app = Router::new()
-        .route("/api/*path", get(api_get))
-        .route("/api/", get(api_root_get))
+        .route("/api/*path", get(api_get).patch(api_patch))
+        .route("/api/", get(api_root_get).patch(api_root_patch))
         .with_state(data)
         .merge(SpaRouter::new("/", "ui").index_file("index.html"));
 
@@ -35,31 +35,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+async fn api_root_patch(
+    State(app): State<Arc<Mutex<App>>>,
+    Json(payload): Json<Value>,
+) -> Json<Value> {
+    api_merge_data(app, "".to_owned(), payload)
+}
+
+async fn api_patch(
+    State(app): State<Arc<Mutex<App>>>,
+    Path(path): Path<String>,
+    Json(payload): Json<Value>,
+) -> Json<Value> {
+    api_merge_data(app, path, payload)
+}
+
+fn api_merge_data(app: Arc<Mutex<App>>, path: String, payload: Value) -> Json<Value> {
+    let mut app = app.lock().unwrap();
+
+    let d = match app.data.pointer_mut(app::path_to_pointer(path.clone()).as_str()) {
+        Some(v) => v,
+        None => {
+            return Json(json!({
+                "error": format!("path {} is not accessible", path)
+            }))
+        }
+    };
+
+    app::json_merge(d, payload);
+
+    Json(json!("ok"))
+}
+
 async fn api_root_get(State(app): State<Arc<Mutex<App>>>) -> Json<Value> {
-    Json(api_query(app, None))
+    Json(api_query(app, "".to_owned()))
 }
 
 async fn api_get(State(app): State<Arc<Mutex<App>>>, Path(path): Path<String>) -> Json<Value> {
-    Json(api_query(app, Some(path)))
+    Json(api_query(app, path))
 }
 
-fn api_query(app: Arc<Mutex<App>>, path: Option<String>) -> Value {
+fn api_query(app: Arc<Mutex<App>>, path: String) -> Value {
     let app = app.lock().unwrap();
 
-    match path {
-        None => return app.data.clone(),
-        Some(mut v) => {
-            if v.ends_with("/") {
-                v.pop();
-            }
-
-            let keys: Vec<&str> = v.split('/').collect();
-            let mut data = &app.data;
-            for i in keys {
-                data = &data[i];
-            }
-
-            return data.clone();
-        }
-    }
+    app.data
+        .pointer(app::path_to_pointer(path).as_str())
+        .unwrap_or(&json!(null))
+        .clone()
 }
