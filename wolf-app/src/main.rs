@@ -2,20 +2,20 @@ use axum::{
     extract::{Json, Path, State, TypedHeader},
     headers::authorization::{Authorization, Basic},
     http::{Request, StatusCode},
-    middleware::{map_request_with_state},
+    middleware::map_request_with_state,
     routing::get,
     Router,
 };
 use axum_extra::routing::SpaRouter;
 use serde_json::{json, Value};
-use std::sync::{Arc, RwLock};
+use std::{sync::{Arc, RwLock}};
 
 pub mod app;
-use app::App;
+use app::{user, App};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let data = match App::new("conf.json", "users.json") {
+    let data = match App::new("conf.json", "user.json") {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to initialize app: err {}", e);
@@ -27,6 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/api/*path", get(api_get).patch(api_patch))
         .route("/api/", get(api_root_get).patch(api_root_patch))
+        .route("/user", get(api_user_get).put(api_user_put))
         //.route_layer(middleware::from_fn_with_state(d1, auth_handler))
         .route_layer(map_request_with_state(d.clone(), auth_middleware))
         .with_state(d)
@@ -38,6 +39,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     Ok(())
+}
+
+async fn api_user_put(
+    State(app): State<Arc<RwLock<App>>>,
+    Json(user): Json<user::UserData>,
+) -> Result<StatusCode, StatusCode> {
+    let mut app = app.write().unwrap();
+    match app.user.update(user) {
+        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        _ => return Ok(StatusCode::NO_CONTENT)
+    }
+}
+
+async fn api_user_get(State(app): State<Arc<RwLock<App>>>) -> Json<user::UserData> {
+    let app = app.read().unwrap();
+    let mut user = app.user.user.clone();
+    user.password = "******".to_owned();
+    Json(user)
 }
 
 async fn api_root_patch(
@@ -99,7 +118,7 @@ async fn auth_middleware<B>(
 ) -> Result<Request<B>, StatusCode> {
     //) -> Result<Response, StatusCode> {
     let app = state.read().unwrap();
-    if !app.users.is_user_valid(auth.username(), auth.password()) {
+    if !app.user.is_user_valid(auth.username(), auth.password()) {
         return Err(StatusCode::UNAUTHORIZED);
     }
     Ok(request)

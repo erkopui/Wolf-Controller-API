@@ -1,25 +1,25 @@
 use serde_json::Value;
 use std::fs;
 
-mod user;
-use user::Users;
+pub mod user;
+use user::User;
 
 #[derive(Clone)]
 pub struct App {
     pub data: Value,
-    pub users: Users,
+    pub user: User,
 }
 
 impl App {
-    pub fn new(conf_file: &str, users_file: &str) -> Result<App, Box<dyn std::error::Error>> {
+    pub fn new(conf_file: &str, user_file: &str) -> Result<App, Box<dyn std::error::Error>> {
         // Read configuration from file
         let content = fs::read(conf_file)?;
 
         // Desrialize data to Json Value
         let data: Value = serde_json::from_slice(&content)?;
-        let users = Users::new(users_file)?;
+        let user = User::new(user_file)?;
 
-        Ok(App { data, users })
+        Ok(App { data, user })
     }
 }
 
