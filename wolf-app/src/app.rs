@@ -2,12 +2,12 @@ use serde_json::Value;
 use std::fs;
 
 pub mod user;
-use user::User;
+use user::Users;
 
 #[derive(Clone)]
 pub struct App {
     pub data: Value,
-    pub user: User,
+    pub users: Users,
 }
 
 impl App {
@@ -17,9 +17,9 @@ impl App {
 
         // Desrialize data to Json Value
         let data: Value = serde_json::from_slice(&content)?;
-        let user = User::new(user_file)?;
+        let users = Users::new(user_file)?;
 
-        Ok(App { data, user })
+        Ok(App { data, users })
     }
 }
 

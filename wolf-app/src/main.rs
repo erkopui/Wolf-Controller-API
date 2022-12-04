@@ -8,7 +8,10 @@ use axum::{
 };
 use axum_extra::routing::SpaRouter;
 use serde_json::{json, Value};
-use std::{sync::{Arc, RwLock}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 pub mod app;
 use app::{user, App};
@@ -43,20 +46,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn api_user_put(
     State(app): State<Arc<RwLock<App>>>,
-    Json(user): Json<user::UserData>,
+    Json(user): Json<user::User>,
 ) -> Result<StatusCode, StatusCode> {
     let mut app = app.write().unwrap();
-    match app.user.update(user) {
+    match app.users.update(user) {
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
-        _ => return Ok(StatusCode::NO_CONTENT)
+        _ => return Ok(StatusCode::NO_CONTENT),
     }
 }
 
-async fn api_user_get(State(app): State<Arc<RwLock<App>>>) -> Json<user::UserData> {
+async fn api_user_get(State(app): State<Arc<RwLock<App>>>) -> Json<user::User> {
     let app = app.read().unwrap();
-    let mut user = app.user.user.clone();
-    user.password = "******".to_owned();
-    Json(user)
+    let mut r: HashMap<String, user::UserData> = HashMap::new();
+    for (p, v) in &app.users.users.user {
+        let mut o = v.clone();
+        o.password = "******".to_owned();
+        r.insert(p.clone(), o);
+    }
+    Json(user::User { user: r })
 }
 
 async fn api_root_patch(
@@ -118,7 +125,7 @@ async fn auth_middleware<B>(
 ) -> Result<Request<B>, StatusCode> {
     //) -> Result<Response, StatusCode> {
     let app = state.read().unwrap();
-    if !app.user.is_user_valid(auth.username(), auth.password()) {
+    if !app.users.is_user_valid(auth.username(), auth.password()) {
         return Err(StatusCode::UNAUTHORIZED);
     }
     Ok(request)

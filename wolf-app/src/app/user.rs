@@ -1,31 +1,37 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::fs;
+use std::{fs, collections::HashMap};
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
-    pub username: String,
     pub password: String,
     pub name: Option<String>,
     pub one_time_password: Option<bool>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
-    pub user: UserData,
+	#[serde(flatten)]
+	pub user: HashMap<String, UserData>,
+}
+
+#[derive(Clone)]
+pub struct Users {
+    pub users: User,
     file_path: String,
 }
 
-impl User {
-    pub fn new(user_file: &str) -> Result<User, Box<dyn std::error::Error>> {
+impl Users{
+    pub fn new(user_file: &str) -> Result<Users, Box<dyn std::error::Error>> {
         // Read user file
         let content =
             fs::read(user_file).expect(format!("Failed to read file: {}", user_file).as_str());
 
         // Desrialize data to Json Value
-        Ok(User {
-            user: serde_json::from_slice(&content)?,
+        Ok(Users {
+            users: serde_json::from_slice(&content)?,
             file_path: user_file.into(),
         })
     }
@@ -38,18 +44,27 @@ impl User {
         format!("{:x}", hasher.finalize())
     }
 
-    pub fn update(&mut self, mut user: UserData) -> Result<(), Box<dyn std::error::Error>> {
-        user.password = self.hash(&user.username, &user.password);
-	self.user = user.clone();
-	fs::write(&self.file_path, serde_json::to_vec_pretty(&user)?)?;
+    pub fn update(&mut self, user: User) -> Result<(), Box<dyn std::error::Error>> {
 
+	let mut u: HashMap<String, UserData> = HashMap::new(); 
+	for (username ,data) in &user.user {
+		let mut d = data.clone();
+		d.password = self.hash(username, &d.password);
+		u.insert(username.clone(), d);
+	}
+	
+	self.users.user = u.clone();
+	fs::write(&self.file_path, serde_json::to_vec_pretty(&u)?)?;
 	Ok(())
     }
 
     pub fn is_user_valid(&self, user: &str, password: &str) -> bool {
-        if self.hash(user, password) == self.user.password {
-            return true;
-        }
-        return false;
+	if let Some(d) =  self.users.user.get(user) {
+		if self.hash(user, password) == d.password {
+			return true;
+		}
+	}
+ 
+	return false;
     }
 }
