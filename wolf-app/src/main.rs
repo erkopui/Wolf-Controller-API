@@ -1,9 +1,9 @@
 use axum::{
-    extract::{Json, Path, State, TypedHeader},
+    extract::{DefaultBodyLimit, Json, Multipart, Path, State, TypedHeader},
     headers::authorization::{Authorization, Basic},
     http::{Request, StatusCode},
     middleware::map_request_with_state,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use axum_extra::routing::SpaRouter;
@@ -13,12 +13,14 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use tower_http::limit::RequestBodyLimitLayer;
+
 pub mod app;
 use app::{user, App};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let data = match App::new("conf.json", "user.json") {
+    let data = match App::new("conf.json", "user.json", "") {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to initialize app: err {}", e);
@@ -31,10 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/*path", get(api_get).patch(api_patch))
         .route("/api/", get(api_root_get).patch(api_root_patch))
         .route("/user", get(api_user_get).put(api_user_put))
+        .route("/firmware", post(firmware_upload))
         //.route_layer(middleware::from_fn_with_state(d1, auth_handler))
         .route_layer(map_request_with_state(d.clone(), auth_middleware))
         .with_state(d)
-        .merge(SpaRouter::new("/", "ui").index_file("index.html"));
+        .merge(SpaRouter::new("/", "ui").index_file("index.html"))
+        .layer(RequestBodyLimitLayer::new(
+            16 * 1024 * 1024, /* 16 mb */
+        ))
+        .layer(DefaultBodyLimit::max(16 * 1024 * 1024));
 
     axum::Server::bind(&"0.0.0.0:5080".parse().unwrap())
         .serve(app.into_make_service())
@@ -42,6 +49,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     Ok(())
+}
+
+async fn firmware_upload(State(app): State<Arc<RwLock<App>>>, mut multipart: Multipart) {
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        let name = field.name().unwrap().to_string();
+        let data = field.bytes().await.unwrap();
+        let app = app.read().unwrap();
+        match app.firmware.save(name.as_str(), data) {
+            Err(e) => eprintln!("{}", e),
+            Ok(_) => println!("Firmware file write was successful"),
+        }
+    }
 }
 
 async fn api_user_put(

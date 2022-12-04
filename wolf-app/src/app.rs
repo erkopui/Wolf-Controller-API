@@ -4,22 +4,27 @@ use std::fs;
 pub mod user;
 use user::Users;
 
+pub mod firmware;
+use firmware::Firmware;
+
 #[derive(Clone)]
 pub struct App {
     pub data: Value,
     pub users: Users,
+    pub firmware: Firmware,
 }
 
 impl App {
-    pub fn new(conf_file: &str, user_file: &str) -> Result<App, Box<dyn std::error::Error>> {
+    pub fn new(conf_file: &str, user_file: &str, firmware_dir: &str) -> Result<App, Box<dyn std::error::Error>> {
         // Read configuration from file
         let content = fs::read(conf_file)?;
 
         // Desrialize data to Json Value
         let data: Value = serde_json::from_slice(&content)?;
         let users = Users::new(user_file)?;
+        let firmware = Firmware::new(firmware_dir);
 
-        Ok(App { data, users })
+        Ok(App { data, users, firmware })
     }
 }
 
