@@ -32,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/api/*path", get(api_get).patch(api_patch))
         .route("/api/", get(api_root_get).patch(api_root_patch))
+        .route("/api", get(api_root_get).patch(api_root_patch))
         .route("/user", get(api_user_get).put(api_user_put))
         .route("/firmware", post(firmware_upload))
         //.route_layer(middleware::from_fn_with_state(d1, auth_handler))
