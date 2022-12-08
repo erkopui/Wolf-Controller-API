@@ -8,6 +8,7 @@ pub enum ValidatorDataType {
     String,
     Number,
     Boolean,
+    Object,
 }
 
 #[derive(Clone, Deserialize, Debug)]
@@ -65,6 +66,11 @@ impl Validator {
             ValidatorDataType::Boolean => {
                 if !data.is_boolean() {
                     return Err(format!("data type mismatch, required boolean").into());
+                }
+            }
+            ValidatorDataType::Object => {
+                if !data.is_object() {
+                    return Err(format!("data type mismatch, required object").into());
                 }
             }
         }

@@ -1,4 +1,10 @@
 {
+	"/net": {
+		"type":"object"
+	},
+	"/net/lan": {
+		"type":"object"
+	},
 	"/net/lan/static": {
 		"type": "boolean"
 	},
