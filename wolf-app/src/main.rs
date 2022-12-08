@@ -4,7 +4,8 @@ use axum::{
     http::{Request, StatusCode},
     middleware::map_request_with_state,
     routing::{get, post},
-    Router,
+    Router, response::IntoResponse,
+    response::Response,
 };
 use axum_extra::routing::SpaRouter;
 use serde_json::{json, Value};
@@ -20,7 +21,7 @@ use app::{user, App};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let data = match App::new("conf.json", "user.json", "") {
+    let data = match App::new("conf.json", "user.json", "", "validator.json") {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to initialize app: err {}", e);
@@ -54,10 +55,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn firmware_upload(State(app): State<Arc<RwLock<App>>>, mut multipart: Multipart) {
     while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap().to_string();
+        //let name = field.name().unwrap().to_string();
         let data = field.bytes().await.unwrap();
         let app = app.read().unwrap();
-        match app.firmware.save(name.as_str(), data) {
+        match app.firmware.save(data) {
             Err(e) => eprintln!("{}", e),
             Ok(_) => println!("Firmware file write was successful"),
         }
@@ -89,7 +90,7 @@ async fn api_user_get(State(app): State<Arc<RwLock<App>>>) -> Json<user::User> {
 async fn api_root_patch(
     State(app): State<Arc<RwLock<App>>>,
     Json(payload): Json<Value>,
-) -> Json<Value> {
+) -> Response {
     api_merge_data(app, "".to_owned(), payload)
 }
 
@@ -97,28 +98,39 @@ async fn api_patch(
     State(app): State<Arc<RwLock<App>>>,
     Path(path): Path<String>,
     Json(payload): Json<Value>,
-) -> Json<Value> {
+) -> Response {
     api_merge_data(app, path, payload)
 }
 
-fn api_merge_data(app: Arc<RwLock<App>>, path: String, payload: Value) -> Json<Value> {
+fn api_merge_data(
+    app: Arc<RwLock<App>>,
+    path: String,
+    payload: Value,
+) -> Response {
     let mut app = app.write().unwrap();
+    let pointer = app::path_to_pointer(path.clone());
 
-    let d = match app
-        .data
-        .pointer_mut(app::path_to_pointer(path.clone()).as_str())
+    if let Err(e) = app
+        .validator
+        .validate(&pointer, &app.data, &payload, None, None)
     {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({
+            "error": format!("failed to validate request, msg: {}", e)
+        }))).into_response();
+    }
+
+    let d = match app.data.pointer_mut(pointer.as_str()) {
         Some(v) => v,
         None => {
-            return Json(json!({
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({
                 "error": format!("path {} is not accessible", path)
-            }))
+            }))).into_response();
         }
     };
 
-    app::json_merge(d, payload);
+    app::json_merge(pointer, d, &payload);
 
-    Json(json!("ok"))
+    StatusCode::NO_CONTENT.into_response()
 }
 
 async fn api_root_get(State(app): State<Arc<RwLock<App>>>) -> Json<Value> {

@@ -1,7 +1,7 @@
 {
-  "juhan": {
-    "password": "7bc70462df6dbd956f231a57e647eed629e7fa4099ab348d0607f0f3750f55c6",
-    "name": "Juhan",
+  "erko": {
+    "password": "b011ad58039ad57a02ca51b827bb9fd5dfeea6624b2152ca8a7e472a31581e43",
+    "name": "Erko",
     "oneTimePassword": true
   },
   "admin": {
@@ -9,9 +9,9 @@
     "name": "Admin User",
     "oneTimePassword": true
   },
-  "erko": {
-    "password": "b011ad58039ad57a02ca51b827bb9fd5dfeea6624b2152ca8a7e472a31581e43",
-    "name": "Erko",
+  "juhan": {
+    "password": "7bc70462df6dbd956f231a57e647eed629e7fa4099ab348d0607f0f3750f55c6",
+    "name": "Juhan",
     "oneTimePassword": true
   }
 }

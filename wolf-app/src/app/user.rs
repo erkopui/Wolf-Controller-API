@@ -20,7 +20,7 @@ pub struct User {
 #[derive(Clone)]
 pub struct Users {
     pub users: User,
-    file_path: String,
+    file: String,
 }
 
 impl Users{
@@ -32,7 +32,7 @@ impl Users{
         // Desrialize data to Json Value
         Ok(Users {
             users: serde_json::from_slice(&content)?,
-            file_path: user_file.into(),
+            file: user_file.into(),
         })
     }
 
@@ -54,7 +54,7 @@ impl Users{
 	}
 	
 	self.users.user = u.clone();
-	fs::write(&self.file_path, serde_json::to_vec_pretty(&u)?)?;
+	fs::write(&self.file, serde_json::to_vec_pretty(&u)?)?;
 	Ok(())
     }
 

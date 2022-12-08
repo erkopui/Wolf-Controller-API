@@ -13,9 +13,9 @@ impl Firmware {
         }
     }
 
-    pub fn save(&self, filename: &str, data: Bytes) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(&self, data: Bytes) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = self.dir.clone();
-        file.push_str(filename);
+        file.push_str("firmware.itb");
         match fs::write(&file, data) {
             Ok(_) => return Ok(()),
             Err(e) => return Err(format!("Failed to write file {} to disk : {}", &file, e).into()),

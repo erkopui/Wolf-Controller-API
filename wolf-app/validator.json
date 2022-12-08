@@ -1,0 +1,56 @@
+{
+	"/net/lan/static": {
+		"type": "boolean"
+	},
+	"/net/lan/dns": {
+		"type": "string"
+	},
+	"/net/lan/dns2": {
+		"type": "string"
+	},
+	"/net/lan/address": {
+		"type": "string",
+		"requires": [
+			{
+				"path": "/net/lan/netmask"
+			},
+			{
+				"path": "/net/lan/gateway"
+			},
+			{
+				"path": "/net/lan/static",
+				"value": true
+			}
+		]
+	},
+	"/net/lan/netmask": {
+		"type": "string",
+		"requires": [
+			{
+				"path": "/net/lan/address"
+			},
+			{
+				"path": "/net/lan/gateway"
+			},
+			{
+				"path": "/net/lan/static",
+				"value": true
+			}
+		]
+	},
+	"/net/lan/gateway": {
+		"type": "string",
+		"requires": [
+			{
+				"path": "/net/lan/address"
+			},
+			{
+				"path": "/net/lan/netmask"
+			},
+			{
+				"path": "/net/lan/static",
+				"value": true
+			}
+		]
+	}
+}
