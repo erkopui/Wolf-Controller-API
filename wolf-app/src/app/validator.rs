@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use serde_json::{map::Map, Value};
+use std::net::Ipv4Addr;
 use std::{collections::HashMap, fs};
 
 #[derive(Clone, Deserialize, Debug)]
@@ -9,6 +10,7 @@ pub enum ValidatorDataType {
     Number,
     Boolean,
     Object,
+    Ipv4,
 }
 
 #[derive(Clone, Deserialize, Debug)]
@@ -38,9 +40,7 @@ impl Validator {
 
         Ok(Validator {
             map: match serde_json::from_slice(&content) {
-                Ok(m) => {
-                    m
-                }
+                Ok(m) => m,
                 Err(e) => return Err(format!("Failed to parse validator file: {}", e).into()),
             },
         })
@@ -71,6 +71,14 @@ impl Validator {
             ValidatorDataType::Object => {
                 if !data.is_object() {
                     return Err(format!("data type mismatch, required object").into());
+                }
+            }
+            ValidatorDataType::Ipv4 => {
+                if !data.is_string() {
+                    return Err(format!("data type mismatch, required ipv4 string").into());
+                }
+                if data.as_str().unwrap().parse::<Ipv4Addr>().is_err() {
+                    return Err(format!("data type mismatch, required ipv4 string").into());
                 }
             }
         }

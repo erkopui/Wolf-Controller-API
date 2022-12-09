@@ -9,13 +9,13 @@
 		"type": "boolean"
 	},
 	"/net/lan/dns": {
-		"type": "string"
+		"type": "ipv4"
 	},
 	"/net/lan/dns2": {
-		"type": "string"
+		"type": "ipv4"
 	},
 	"/net/lan/address": {
-		"type": "string",
+		"type": "ipv4",
 		"requires": [
 			{
 				"path": "/net/lan/netmask"
@@ -30,7 +30,7 @@
 		]
 	},
 	"/net/lan/netmask": {
-		"type": "string",
+		"type": "ipv4",
 		"requires": [
 			{
 				"path": "/net/lan/address"
@@ -45,7 +45,7 @@
 		]
 	},
 	"/net/lan/gateway": {
-		"type": "string",
+		"type": "ipv4",
 		"requires": [
 			{
 				"path": "/net/lan/address"
