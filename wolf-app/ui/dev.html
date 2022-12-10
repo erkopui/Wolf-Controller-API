@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!--
+		  1. https://blog.whatwg.org/the-road-to-html-5-character-encoding
+		  2. Options:
+		         resize enabled:  width=device-width,initial-scale=1
+		         resize disabled: width=device-width,initial-scale=1,maximum-scale=1
+		-->
+
+		<meta charset="utf-8">                                               <!-- 1 -->
+		<!-- <base href="/"> -->
+		<title>Foxiot</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1">  <!-- 2 -->
+
+		<!--
+		Chrome, Firefox OS and Opera
+		<meta name="theme-color" content="#4285f4">
+		-->
+
+		<!--
+		Place icons in the root of your domain
+		and these references are not needed.
+
+		<link rel="shortcut icon" href="favicon.ico">
+		<link rel="apple-touch-icon" href="apple-touch-icon.png?{h}">
+		-->
+		<link rel="stylesheet" href="lib.css" min cat="
+			@litejs/ui/css/base.css
+			%/grid.css
+			%/grid-left.css
+			%/spacing-4.css
+			%/clearfix.css
+			%/font-native.css
+		" inline>
+		<link rel="stylesheet" href="app.css" min>
+	</head>
+	<body>
+		<!--
+		Include scripts in the end of the body,
+		so there is no need for waiting DOMContentLoaded
+		-->
+		<script src="js/load.js" cat="@litejs/ui/load" drop="require,reuse" inline min></script>
+		<script src="js/up.js" min="0.js?{h}"
+			banner="litejs.com/MIT-LICENSE.txt"
+			if="!window.PointerEvent||!navigator.sendBeacon"
+			cat="
+				@litejs/ui/polyfill
+		"></script>
+		<script src="js/litejs.js" min="1.js?{h}"
+			banner="litejs.com/MIT-LICENSE.txt"
+			cat="
+				litejs/json
+				%/i18n
+				@litejs/ui
+				+/pointer.js
+				+/binding/_default.js
+		" drop="sha1|debug"></script>
+		<script src="view/components.tpl" type="litejs/view" min="0.tpl?{h}"
+			cat="
+				@litejs/ui/component/confirm.tpl
+				%/material.tpl
+				%/form1.tpl
+				%/Slider.tpl
+		"></script>
+		<script src="view/main.view" type="litejs/view" min></script>
+		<script src="js/bindings.js" min="2.js?{h}"></script>
+		<script src="js/app.js" min></script>
+		<noscript>
+			<h1>Error</h1>This application requires JavaScript
+			<!--
+			Redirect to no-JavaScript version of the site
+			or provide a link to give a chance to turn JavaScript on before redirect.
+			<meta http-equiv="refresh" content="0;url=no-js.html">
+			-->
+		</noscript>
+	</body>
+</html>
+

@@ -1,0 +1,68 @@
+
+html {
+	height: 100%;
+	overflow-y: scroll;
+	min-width: 300px;
+}
+
+body {
+	height: 100%;
+	margin: 0 auto;
+	padding-bottom: 18%;
+}
+
+.lg > body {
+	width: 990px;
+	margin: 0 auto;
+	zoom: 1;
+}
+
+input[type="file" i] {
+	width: 260px;
+}
+progress {
+	width: 260px;
+	height: 20px;
+	margin: 6px 0;
+}
+
+.login {
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.scroll,
+.md .md-scroll,
+.lg .lg-scroll {
+	overflow-y: auto;
+	scroll-behavior: smooth;
+	overscroll-behavior: none;
+	-ms-scroll-chaining: none;
+}
+
+.c1 {
+	color: #0E83C5;
+	text-decoration: none;
+}
+.c3 { color: #f12; }
+.b2 {
+	background-color: #F58220;
+}
+
+.head {
+	border-bottom: 5px solid #F58220;
+}
+
+
+.Select {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	padding: 4px;
+	margin: -4px -4px -4px auto;
+}
+.Select:after {
+	content: " ▾"
+}
+
+

@@ -1,0 +1,99 @@
+
+
+%el form-js
+	form[action="javascript:"][method=POST].cf
+
+%el submit
+	input.w12.btn.is-blue[type=submit]
+
+
+%view #public #body
+	.app.max-height.anim
+		%child
+
+%el Top-menu
+	.mat-Menu.shadow-1
+		a.mat-Menu-item.waves Home
+			;href: "#"
+		a.mat-Menu-item.waves Network
+			;href: "#net"
+		a.mat-Menu-item.waves.is-divider Firmware
+			;href: "#firmware"
+		.mat-Menu-item.waves Log out
+			@click: "logout"
+
+%el upload-progress
+	.cf
+		progress.left
+			;value: loaded||0
+			;max: total||0
+		input[type=button].left.m02
+			;val: "Cancel"
+			@click: cancel
+
+%view #private #body
+	.max-height.anim
+		.head.cf.p2
+			h1.reset.left>a.c1[href="#"] FoxIoT
+			.right.m10
+				.btn.Select.hand
+					@click: ["Top-menu", "right-end", "bottom", 0, 1], "showMenu"
+					= user || _("- unnamed -")
+		%child
+
+%view 404 #private
+	h2 Error 404
+	a.btn-link[href="#"] Start over again
+
+%view #ok #private
+	h2 Ok
+	.btn.left Back
+		@click: "up"
+
+
+%view #login #public
+	;title: "Log in"
+	form-js.grid.b3.login ;emitForm:"login"
+		.col.t-center
+			h3 Log in
+			b.c3 {params.message || params.code}
+		label.row
+			.col.md-w4.input__label Username
+			.col.md-w4>input.w12[name=user][autocomplete=username][autocapitalize=off] ;focus::
+		label.row
+			.col.md-w4.input__label Password
+			.col.md-w4>input.w12[name=pass][type=password][autocomplete=current-password]
+		.row
+			.col.md-w4
+			.col.md-w4
+				submit Log in
+
+%view #home #private
+	h2 Hello
+	p ui 0.0.1
+
+%view net #private
+	h2 Network
+	form-js[method=PATCH][action="/api/net"].grid.b3
+		@submit: ["#ok"], "upload"
+		;xhr
+		label.row
+			.col.md-w4.input__label = i
+			.col.md-w4
+				input.w12
+					;name: i
+					= item
+		.row
+			.col.md-w4
+			.col.md-w4
+				submit Save
+
+%view firmware #private
+	h2 Firmware upload
+	form[method=POST][enctype="multipart/form-data"][action="/firmware"]
+		@submit: "upload"
+		input[type=file][name=file].left
+		input[type=submit].left.m02 Upload
+
+
+
