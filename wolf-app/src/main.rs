@@ -45,7 +45,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))
         .layer(DefaultBodyLimit::max(16 * 1024 * 1024));
 
-    axum::Server::bind(&"0.0.0.0:5080".parse().unwrap())
+    let addr = "0.0.0.0:5080".parse().unwrap();
+    println!("Listening on {}", addr);
+
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
