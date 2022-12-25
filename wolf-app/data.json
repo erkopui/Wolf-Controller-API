@@ -1,0 +1,75 @@
+{
+	"net": {
+		"lan": {
+			"static": false,
+			"address": "192.168.2.127",
+			"netmask": "255.255.255.0",
+			"gateway": "192.168.2.1",
+			"dns": "1.1.1.1",
+			"dns2": "8.8.8.8"
+		},
+		"wwan": {
+			"enbaled": true,
+			"apn": "internet"
+		},
+		"wireguard": {
+			"enabled": false
+		}
+	},
+	"io": {
+		"conf": {
+			"io1": {
+				"pullup": true,
+				"mode": "input",
+				"inverted": true
+			},
+			"io2": {
+				"pullup": true,
+				"mode": "input",
+				"inverted": true
+			},
+			"io3": {
+				"pullup": true,
+				"mode": "output",
+				"inverted": false
+			},
+			"io4": {
+				"pullup": false,
+				"mode": "output",
+				"inverted": false
+			},
+			"io5": {
+				"pullup": true,
+				"mode": "input",
+				"inverted": false
+			},
+			"io6": {
+				"pullup": true,
+				"mode": "input",
+				"inverted": true
+			},
+			"io7": {
+				"pullup": true,
+				"mode": "ntc",
+				"inverted": false
+			},
+			"io8": {
+				"pullup": false,
+				"mode": "output",
+				"inverted": false
+			},
+			"relay": {
+				"mode": "gpio",
+				"inverted": true
+			}
+		}
+	},
+	"rs485": {
+		"baudRate": 9600,
+		"parity": "none",
+		"stopBits": 1,
+		"dataBits": 8
+	},
+	"version": "0.1.0",
+	"type": "8AiDio1Ro RS-485"
+}

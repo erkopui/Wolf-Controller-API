@@ -1,71 +1,8 @@
 {
-	"net": {
-		"lan": {
-			"static": false,
-			"address": "192.168.2.127",
-			"netmask": "255.255.255.0",
-			"gateway": "192.168.2.1",
-			"dns": "1.1.1.1",
-			"dns2": "8.8.8.8"
-		},
-		"wwan": {
-			"enbaled": true,
-			"apn": "internet"
-		},
-		"wireguard": {
-			"enabled": false
-		}
-	},
-	"io": {
-		"conf": {
-			"io1": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io2": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io3": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io4": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io5": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io6": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io7": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			},
-			"io8": {
-				"enbled": true,
-				"mode": "inputPullUp",
-				"inverted": false
-			}
-		}
-	},
-	"rs485": {
-		"baudRate": 9600,
-		"parity": "none",
-		"stopBits": 1,
-		"dataBits": 8
-	},
-	"version": "0.1.0",
-	"type": "8AiDio1Ro RS-485"
+	"dataFile": "data.json",
+	"userFile": "user.json",
+	"firmwareDirectory":"",
+	"validatorFile": "validator.json",
+	"netdFile": "netd.conf",
+	"device": "pc"
 }

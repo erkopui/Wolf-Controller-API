@@ -3,15 +3,18 @@ use axum::{
     headers::authorization::{Authorization, Basic},
     http::{Request, StatusCode},
     middleware::map_request_with_state,
-    routing::{get, post},
-    Router, response::IntoResponse,
+    response::IntoResponse,
     response::Response,
+    routing::{get, post},
+    Router,
 };
 use axum_extra::routing::SpaRouter;
+use core::time::Duration;
 use serde_json::{json, Value};
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
+    thread,
 };
 
 use tower_http::limit::RequestBodyLimitLayer;
@@ -21,14 +24,33 @@ use app::{user, App};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let data = match App::new("conf.json", "user.json", "", "validator.json") {
+    let app = match App::new("conf.json") {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to initialize app: err {}", e);
             std::process::exit(1);
         }
     };
-    let d = Arc::new(RwLock::new(data));
+
+    let d = Arc::new(RwLock::new(app));
+    let gpio_app = d.clone();
+    let adc_app = d.clone();
+
+    let _gpio_handle = thread::spawn(move || loop {
+        thread::sleep(Duration::from_millis(50));
+        let app = gpio_app.write().unwrap();
+        if let Some(v) = &app.gpio {
+            v.read().unwrap().poll(&app.store);
+        } 
+    });
+
+    let _gpio_adc_handle = thread::spawn(move || loop {
+        thread::sleep(Duration::from_millis(25));
+        let app = adc_app.write().unwrap();
+        if let Some(v) = &app.gpio {
+            v.write().unwrap().adc_poll(&app.store);
+        } 
+    });
 
     let app = Router::new()
         .route("/api/*path", get(api_get).patch(api_patch))
@@ -36,7 +58,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api", get(api_root_get).patch(api_root_patch))
         .route("/user", get(api_user_get).put(api_user_put))
         .route("/firmware", post(firmware_upload))
-        //.route_layer(middleware::from_fn_with_state(d1, auth_handler))
+        .route("/reboot", get(api_reboot))
+        .route("/save", get(api_save))
         .route_layer(map_request_with_state(d.clone(), auth_middleware))
         .with_state(d)
         .merge(SpaRouter::new("/", "ui").index_file("index.html"))
@@ -105,33 +128,32 @@ async fn api_patch(
     api_merge_data(app, path, payload)
 }
 
-fn api_merge_data(
-    app: Arc<RwLock<App>>,
-    path: String,
-    payload: Value,
-) -> Response {
-    let mut app = app.write().unwrap();
+fn api_merge_data(app: Arc<RwLock<App>>, path: String, payload: Value) -> Response {
     let pointer = app::path_to_pointer(path.clone());
 
-    if let Err(e) = app
-        .validator
-        .validate(&pointer, &app.data, &payload, None, None)
     {
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({
-            "error": format!("failed to validate request, msg: {}", e)
-        }))).into_response();
+        let a = &app.read().unwrap();
+        let data = &a.store.read().unwrap();
+        if let Err(e) = a.validator.validate(&pointer, &data, &payload, None, None) {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "error": format!("failed to validate request, msg: {}", e)
+                })),
+            )
+                .into_response();
+        }
     }
 
-    let d = match app.data.pointer_mut(pointer.as_str()) {
-        Some(v) => v,
-        None => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({
-                "error": format!("path {} is not accessible", path)
-            }))).into_response();
-        }
-    };
-
-    app::json_merge(pointer, d, &payload);
+    if let Err(e) = App::merge_data(app, pointer, &payload) {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "error": format!("failed to write data, msg: {}", e)
+            })),
+        )
+            .into_response();
+    }
 
     StatusCode::NO_CONTENT.into_response()
 }
@@ -146,11 +168,28 @@ async fn api_get(State(app): State<Arc<RwLock<App>>>, Path(path): Path<String>) 
 
 fn api_query(app: Arc<RwLock<App>>, path: String) -> Value {
     let app = app.read().unwrap();
+    let data = &app.store.read().unwrap();
 
-    app.data
-        .pointer(app::path_to_pointer(path).as_str())
+    data.pointer(app::path_to_pointer(path).as_str())
         .unwrap_or(&json!(null))
         .clone()
+}
+
+async fn api_reboot(State(app): State<Arc<RwLock<App>>>) {
+    app.read().unwrap().reboot();
+}
+
+async fn api_save(State(app): State<Arc<RwLock<App>>>) -> Response {
+    if let Err(e) = app.read().unwrap().save() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "error": format!("failed to validate request, msg: {}", e)
+            })),
+        )
+            .into_response();
+    }
+    StatusCode::NO_CONTENT.into_response()
 }
 
 async fn auth_middleware<B>(
@@ -158,7 +197,6 @@ async fn auth_middleware<B>(
     TypedHeader(auth): TypedHeader<Authorization<Basic>>,
     request: Request<B>,
 ) -> Result<Request<B>, StatusCode> {
-    //) -> Result<Response, StatusCode> {
     let app = state.read().unwrap();
     if !app.users.is_user_valid(auth.username(), auth.password()) {
         return Err(StatusCode::UNAUTHORIZED);
