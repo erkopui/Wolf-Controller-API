@@ -1,10 +1,26 @@
 
 
-%el form-js
-	form[action="javascript:"][method=POST].cf
-
 %el submit
 	input.w12.btn.is-blue[type=submit]
+
+%el form-js
+	form[action="javascript:"][method=POST].cf.grid.p3
+
+%el form-row
+	label.row
+		;if i !== "static"
+		.col.md-w4.input__label = i
+		.col.md-w4
+			input.w12
+				;name: i
+				= item
+				;type: typeof item === "boolean" ? "checkbox" : "text"
+
+%el form-save
+	.row
+		.col.md-w4
+		.col.md-w4
+			submit Save
 
 
 %view #public #body
@@ -53,10 +69,10 @@
 
 %view #login #public
 	;title: "Log in"
-	form-js.grid.b3.login ;emitForm:"login"
+	form-js.login ;emitForm:"login"
 		.col.t-center
 			h3 Log in
-			b.c3 {params.message || params.code}
+			b.c3 {params.message}
 		label.row
 			.col.md-w4.input__label Username
 			.col.md-w4>input.w12[name=user][autocomplete=username][autocapitalize=off] ;focus::
@@ -70,23 +86,22 @@
 
 %view #home #private
 	h2 Hello
-	p ui 0.0.1
+	p Version {api.version}
 
 %view net #private
 	h2 Network
-	form-js[method=PATCH][action="/api/net"].grid.b3
-		@submit: ["#ok"], "upload"
-		;xhr
-		label.row
-			.col.md-w4.input__label = i
-			.col.md-w4
-				input.w12
-					;name: i
-					= item
-		.row
-			.col.md-w4
-			.col.md-w4
-				submit Save
+	h3 Lan
+	form-js[action="/api/net/lan"].box1
+		@submit: ["#ok"], "patch"
+		;api
+		form-row
+		form-save
+	h3 WWAN
+	form-js[action="/api/net/wwan"].box1
+		@submit: ["#ok"], "patch"
+		;api
+		form-row
+		form-save
 
 %view firmware #private
 	h2 Firmware upload

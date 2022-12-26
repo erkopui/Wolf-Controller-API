@@ -53,6 +53,12 @@ progress {
 	border-bottom: 5px solid #F58220;
 }
 
+.box1 {
+	display: block;
+	border-radius: 4px;
+	border: 1px solid #aaa;
+}
+
 
 .Select {
 	overflow: hidden;

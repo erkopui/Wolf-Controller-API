@@ -29,82 +29,18 @@ El.data._ = window._ = i18n
 
 !function(window, document, navigator, sessionStorage) {
 	var html = document.documentElement
-	// Detect base from HTML <base> element
-	, base = (html.getElementsByTagName("base")[0] || _).href
 	, body = document.body
+	, base = location.href.split("#")[0].replace(/\/[^\/]+$/, "")
 
-	function addMethod(method, name) {
-		xhr[name || method.toLowerCase()] = xhr[method] = xhrReq.bind(null, method)
-	}
-	addMethod("GET")
-	addMethod("POST")
-	addMethod("PUT")
-	addMethod("DELETE", "del")
 
-	app.on("login", function(ev, data) {
-		sessionStorage.auth = "Basic " + btoa(data.user + ":" + data.pass)
-		up()
-	})
-	app.on("logout", logout)
-
-	function logout(ev, data) {
-		El.data.user = El.data.api = sessionStorage.auth = ""
-		app.show(true)
-	}
-	function up() {
-		xhr.get("/api", handleData)
-	}
-	function handleData(err, data) {
-		if (err) {
-			//return logout()
+	function apiGet() {
+		xhrReq("GET", "/api", function(err, data) {
+			if (err) return logout(data)
 			El.data.user = "User"
-			El.data.api = {
-				net: {
-					static: false,
-					ip:"1.2.3.4"
-				}
-			}
-		} else {
-			El.data.user = "User"
-		}
-		app.show(true, err && data)
-	}
-	app.on("upload", function(e, el, view) {
-		var data = new FormData(el)
-		, prog = El("upload-progress")
-		, req = xhr(el.method, el.action, function(err, body) {
-			reset()
-			if (view) app(view).show({message: body})
+			El.data.api = data
+			app.show(true)
 		})
-		if (sessionStorage.auth) {
-			req.setRequestHeader("Authorization", sessionStorage.auth)
-		}
-		req.onabort = req.onerror = req.ontimeout = reset
-		if (req.upload) {
-			req.upload.onprogress = progress
-		}
-		req.send(data)
-		el.parentNode.replaceChild(prog, el)
-		progress({cancel: cancel})
-		function progress(ev) {
-			El.render(prog, ev)
-		}
-		function cancel() {
-			req.abort()
-		}
-		function reset() {
-			if (!prog.parentNode) return
-			prog.parentNode.replaceChild(el, prog)
-			var prev = el.previousSibling
-			El.scope(prev).x = 0
-			El.render(prev)
-			el.reset()
-			app.blur()
-		}
-		return Event.stop(e)
-	})
-
-
+	}
 	function xhrReq(method, url, next, data) {
 		var req = xhr(method, url, function onResponse(err, txt) {
 			var body = (
@@ -124,7 +60,6 @@ El.data._ = window._ = i18n
 		xhrSend(req, data)
 		return req
 	}
-
 	function xhrSend(req, data) {
 		if (sessionStorage.auth) {
 			req.setRequestHeader("Authorization", sessionStorage.auth)
@@ -134,26 +69,110 @@ El.data._ = window._ = i18n
 		}
 		req.send(data ? JSON.stringify(data) : null)
 	}
+	function logout(data) {
+		El.data.user = El.data.api = sessionStorage.auth = ""
+		app.show(true, {
+			message: data.message || data.code ? _("err" + data.code) : ""
+		})
+	}
+
+	El.bindings.api = function(el, url, attr) {
+		var scope = El.scope(el, {})
+
+		if (!scope.c) {
+			scope.i = 0
+			scope.c = document.createComment("xhr")
+			scope.t = el.replaceChild(scope.c, el.firstChild)
+		}
+
+		if (!scope.x) {
+			scope.x = 1
+			var arr = JSON.get(El.data, el.action.slice(base.length))
+
+			for (; scope.i > 0; scope.i--) {
+				El.kill(scope.c.previousSibling)
+			}
+			if (!scope.c.parentNode) return
+			if (Array.isArray(arr)) arr = arr.map(clone, arr)
+			else if (arr && arr.constructor === Object) {
+				arr = Object.keys(arr).map(function(key) {
+					return clone(arr[key], key)
+				}, arr)
+			}
+			El.append(el, arr, scope.c)
+		}
+		function clone(val, i, arr) {
+			var e = scope.t.cloneNode(true)
+			, sc = El.scope(e, {i: i, item: val})
+			sc.i = i
+			sc.item = val
+			El.render(e)
+			scope.i++
+			return e
+		}
+	}
+
+	app.on("login", function(e, data) {
+		sessionStorage.auth = "Basic " + btoa(data.user + ":" + data.pass)
+		apiGet()
+	})
+	app.on("logout", logout)
+	app.on("patch", function(ev, el, nextView) {
+		var data = El.val(el)
+		console.log("save", data)
+		xhrReq("PATCH", el.action, apiGet, data)
+		return Event.stop(ev)
+	})
+	app.on("upload", function(e, el, view) {
+		var data = new FormData(el)
+		, prog = El("upload-progress")
+		, req = xhr(el.method, el.action, function(err, body) {
+			reset()
+			if (view) app(view).show({message: body})
+		})
+		req.onabort = req.onerror = req.ontimeout = reset
+		if (req.upload) {
+			req.upload.onprogress = progress
+		}
+		if (sessionStorage.auth) {
+			req.setRequestHeader("Authorization", sessionStorage.auth)
+		}
+		req.send(data)
+		el.parentNode.replaceChild(prog, el)
+		progress({cancel: cancel})
+		function progress(e) {
+			El.render(prog, e)
+		}
+		function cancel() {
+			req.abort()
+		}
+		function reset() {
+			if (!prog.parentNode) return
+			prog.parentNode.replaceChild(el, prog)
+			var prev = el.previousSibling
+			El.scope(prev).x = 0
+			El.render(prev)
+			el.reset()
+			app.blur()
+		}
+		return Event.stop(e)
+	})
+
 
 	_.def({
 		"en": "In English"
 	})
+	_.add("en", {
+		"err401": "Unauthorized"
+	})
+
 	function setLang(lang) {
 		html.lang = Date._locale = _.use(lang)
 	}
 	app.setLang = setLang
 	setLang(_.detect())
 
-	history.scrollRestoration = "manual"
-
-
-
-
-
-
-
-
-
+	apiGet()
 
 
 	xhr.load(El.findAll(body, "script[type='litejs/view']").pluck("src"), function() {
@@ -165,7 +184,7 @@ El.data._ = window._ = i18n
 		var el = e.target
 		, link = !(e.altKey || e.shiftKey) && el.tagName == "A" && el.href.split("#")
 
-		if (link && link[0] == (base || location.href.split("#")[0])) {
+		if (link && link[0] == (location.href.split("#")[0])) {
 			if (e[El.kbMod]) window.open(el.href, "_blank")
 			else if (!history.setUrl(link[1])) app.show(true)
 			return Event.stop(e)
